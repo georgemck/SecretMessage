@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      escapeHTMLPolicy = trustedTypes.createPolicy("forceInner", {
+        createHTML: (to_escape) => to_escape,
+      });
+    </script>
+  </head>
+  <body>
+    <div id="messageDiv"></div>
+    <script src="index.js"></script>
+    <script>
+      let pt = prompt(
+        "Enter a URL for a Published Google Document that contains a table"
+      );
+      if (
+        pt.search("https://docs.google.com/document/d") != -1 &&
+        isValidUrl(pt)
+      ) {
+        let TABLE = document.createElement("table");
+        document.body.style.zoom = "125%";
+
+        fetch(pt)
+          .then((response) => response.text())
+          //.then(str => new window.DOMParser().parseFromString(str, "text/xml"))
+          .then((str) => {
+            let st = str.search(/<table/);
+            let end = str.search(/<\/table>/);
+            let table = str.substring(st, end + 8);
+            // console.log(st, end, table);
+            TABLE.innerHTML = escapeHTMLPolicy.createHTML(table);
+            //   console.log(TABLE);
+            // const tableArray = fillArrayWithTableDataJavaScript(TABLE);
+
+            //determine number of rows and columns in the table
+            const NUMBEROFROWSINTABLE = TABLE.children[0].children.length;
+            const NUMBEROFCOLUMNSINTABLE =
+              TABLE.children[0].children[0].children.length;
+            console.log(NUMBEROFROWSINTABLE, "NUMBEROFROWSINTABLE");
+            console.log(NUMBEROFCOLUMNSINTABLE, "NUMBEROFCOLUMNSINTABLE");
+
+            let maxCols = 0; //save the largest value of columns
+            let maxRows = 0; //save the largest value of rows
+            //populate the array with data from the table
+            for (let i = 1; i < NUMBEROFROWSINTABLE; i++) {
+              let x = stripSlashes(
+                TABLE.children[0].children[i].children[0].innerText
+              );
+              let y = stripSlashes(
+                TABLE.children[0].children[i].children[2].innerText
+              );
+              let v = stripSlashes(
+                TABLE.children[0].children[i].children[1].innerText
+              );
+
+              if (parseInt(y) > maxRows) {
+                maxRows = parseInt(y);
+              }
+              if (x > maxCols) {
+                maxCols = x;
+              }
+              //spaceArray[y][x] = v;
+              console.log(i, x, y, v);
+            }
+            maxCols++;
+            maxRows++;
+            console.log(maxCols, maxRows);
+
+            //create empty array large enough to hold the table
+            let spaceArray = Array(maxRows)
+              .fill("")
+              .map(() => Array(maxCols));
+            // console.log(spaceArray, "spaceArray");
+            for (let i = 1; i < NUMBEROFROWSINTABLE; i++) {
+              let x = stripSlashes(
+                TABLE.children[0].children[i].children[0].innerText
+              );
+              let y = stripSlashes(
+                TABLE.children[0].children[i].children[2].innerText
+              );
+              let v = stripSlashes(
+                TABLE.children[0].children[i].children[1].innerText
+              );
+              if (parseInt(y) > maxRows) {
+                maxRows = parseInt(y);
+              }
+              if (x > maxCols) {
+                maxCols = x;
+              }
+              spaceArray[y][x] = v;
+            }
+            const tableArray = [spaceArray, maxCols, maxRows];
+            //print out and return the message from the table to the user interface
+            message = getMessage(tableArray[0], tableArray[2]);
+            console.log(message[0]);
+            document.getElementById("messageDiv").innerHTML = message[1];
+          })
+          .then(() => {});
+      } else {
+        if (pt.search("https://docs.google.com/document/d") == -1) {
+          alert(
+            "that was not a Google Docs URL. Please reload page and try again"
+          );
+        } else {
+          alert("that was not a valid URL. Please reload page and try again");
+        }
+      }
+    </script>
+  </body>
+</html>
